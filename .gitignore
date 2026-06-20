@@ -1,0 +1,18 @@
+# venvs / tooling
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.idea/
+
+# plans
+plans/
+
+# legacy reference projects (own git history + large venvs; kept locally, not tracked here)
+_ABS_Data/
+_CensusData/
+
+# data: ignore generated/fetched output; keep the small reference crosswalks needed to run
+data/*
+!data/reference/
+data/reference/_structure_cache/
