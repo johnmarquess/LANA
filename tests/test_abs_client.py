@@ -47,52 +47,49 @@ def test_geography_dimension_raises_when_absent():
 
 # --- retry behaviour ------------------------------------------------------
 class _FakeClient:
-    """Context-manager stand-in for httpx.Client; .get returns a fixed status."""
+    """Persistent httpx.Client stand-in; each .get() returns the next queued status."""
 
-    def __init__(self, status: int, text: str = "ok"):
-        self._status = status
+    def __init__(self, statuses: list[int], text: str = "ok"):
+        self._statuses = iter(statuses)
         self._text = text
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        return False
+        self.get_calls = 0
 
     def get(self, url, params=None, headers=None):
-        return httpx.Response(self._status, request=httpx.Request("GET", url), text=self._text)
+        self.get_calls += 1
+        return httpx.Response(
+            next(self._statuses), request=httpx.Request("GET", url), text=self._text
+        )
+
+    def close(self):
+        pass
 
 
-def _patch(monkeypatch, statuses):
-    it = iter(statuses)
-    monkeypatch.setattr(abs_client.httpx, "Client", lambda *a, **k: _FakeClient(next(it)))
+def _patch(monkeypatch, statuses: list[int], text: str = "ok") -> _FakeClient:
+    fake = _FakeClient(statuses, text)
+    monkeypatch.setattr(abs_client.httpx, "Client", lambda *a, **k: fake)
     monkeypatch.setattr(abs_client.time, "sleep", lambda *_: None)  # no real backoff waits
+    return fake
 
 
 def test_get_retries_transient_then_succeeds(monkeypatch):
-    _patch(monkeypatch, [503, 200])
+    fake = _patch(monkeypatch, [503, 200])
     r = ABSClient(Settings())._get("http://x", "application/json")
     assert r.status_code == 200
+    assert fake.get_calls == 2  # one persistent client, reused across the retry
 
 
 def test_get_raises_immediately_on_non_retryable(monkeypatch):
-    calls: list[int] = []
-
-    def factory(*a, **k):
-        calls.append(1)
-        return _FakeClient(404)
-
-    monkeypatch.setattr(abs_client.httpx, "Client", factory)
-    monkeypatch.setattr(abs_client.time, "sleep", lambda *_: None)
+    fake = _patch(monkeypatch, [404, 200])  # the 200 must never be reached
     with pytest.raises(httpx.HTTPStatusError):
         ABSClient(Settings())._get("http://x", "application/json")
-    assert len(calls) == 1  # the 404 is not retried
+    assert fake.get_calls == 1  # the 404 is not retried
 
 
 def test_get_raises_runtimeerror_after_exhausting_retries(monkeypatch):
-    _patch(monkeypatch, [503, 503, 503, 503])  # api_max_retries default = 4
+    fake = _patch(monkeypatch, [503, 503, 503, 503])  # api_max_retries default = 4
     with pytest.raises(RuntimeError):
         ABSClient(Settings())._get("http://x", "application/json")
+    assert fake.get_calls == 4
 
 
 def test_get_data_handles_type_change_after_inference_window(monkeypatch):
@@ -101,9 +98,9 @@ def test_get_data_handles_type_change_after_inference_window(monkeypatch):
     n = 2001
     rows = [f"100: A,{i}" for i in range(n)] + ["100: A,1.5"]
     csv = "REGION: Region,OBS_VALUE\n" + "\n".join(rows)
-    monkeypatch.setattr(abs_client.httpx, "Client", lambda *a, **k: _FakeClient(200, text=csv))
-    monkeypatch.setattr(abs_client.time, "sleep", lambda *_: None)
+    _patch(monkeypatch, [200], text=csv)
     df = ABSClient(Settings()).get_data("ABS,FLOW", "all")
     assert df.height == n + 1
     assert df["OBS_VALUE"].dtype == pl.Float64
+    assert df["OBS_VALUE"][-1] == 1.5
     assert df["OBS_VALUE"][-1] == 1.5
