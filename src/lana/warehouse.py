@@ -11,6 +11,7 @@ from pathlib import Path
 import polars as pl
 
 from lana.abs_client import ABSClient
+from lana.attribution import attribution_text
 from lana.config import Settings
 from lana.extract import extract_bronze
 from lana.facts import build_fact
@@ -123,6 +124,13 @@ def _schema_md(tables: dict[str, pl.DataFrame]) -> str:
         "- Proportions on tiny denominators are noisy; `denominator` is carried; zero -> null.",
         "- SEIFA is 2021 only (2016 SEIFA uses 2016 boundaries — excluded to keep one geography).",
         "",
+        "## Source & attribution",
+        "See `ATTRIBUTION.txt` (shipped alongside these files) and the repo `ATTRIBUTION.md`.",
+        "",
+        "```",
+        attribution_text().rstrip(),
+        "```",
+        "",
         "## Tables",
     ]
     for name in sorted(tables):
@@ -174,5 +182,6 @@ def build_warehouse(settings: Settings | None = None, refresh: bool = False) -> 
     for name, df in tables.items():
         write_table(df, name, s)
     (s.warehouse_dir / "schema.md").write_text(_schema_md(tables), encoding="utf-8")
+    (s.warehouse_dir / "ATTRIBUTION.txt").write_text(attribution_text(), encoding="utf-8")
     print(f"Warehouse written to {s.warehouse_dir}")
     return tables

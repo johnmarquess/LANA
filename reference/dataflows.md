@@ -3,6 +3,10 @@
 API: `https://data.api.abs.gov.au/rest` — SDMX REST, **open (no auth/key)**.
 All values verified by probing the API on 2026-06-20.
 
+> **Attribution.** Source titles, catalogue numbers (e.g. SEIFA cat. 2033.0.55.001) and the
+> required CC BY 4.0 attribution/disclaimer live in [`../ATTRIBUTION.md`](../ATTRIBUTION.md).
+> The PHN concordance is published by the Dept of Health, not the ABS.
+
 ## Census 2021 General Community Profile (GCP)
 
 Full table set `C21_G01_SA2` … `C21_G62_SA2` is published at SA2. Pull at SA2,
