@@ -15,7 +15,7 @@ from lana.config import Settings
 from lana.extract import extract_bronze
 from lana.geography import target_sa2_codes
 from lana.indicators import build_gold
-from lana.normalize import normalize
+from lana.normalise import normalise
 from lana.workbook import write_workbook
 
 # (dataflow_id, measure_name, geography_dimension_id)
@@ -43,7 +43,7 @@ def run_phn(phn: str, settings: Settings | None = None, refresh: bool = False) -
     for key, (flow, measure, geo_dim) in SOURCES.items():
         print(f"Extracting {flow} ...")
         bronze = extract_bronze(flow, sa2_codes, cache_tag=tag, client=client, settings=s, refresh=refresh)
-        df = normalize(bronze, measure=measure, geo_dim=geo_dim)
+        df = normalise(bronze, measure=measure, geo_dim=geo_dim)
         df.write_parquet(s.silver_dir / f"{flow}__{tag}.parquet")
         silver[key] = df
 

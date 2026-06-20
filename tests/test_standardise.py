@@ -2,7 +2,7 @@
 
 import polars as pl
 
-from lana.standardize import age_standardised_rate, parse_age_range, std_pop_table
+from lana.standardise import age_standardised_rate, parse_age_range, std_pop_table
 
 
 def test_parse_age_range():

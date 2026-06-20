@@ -16,7 +16,7 @@ from lana.extract import extract_bronze
 from lana.facts import build_fact
 from lana.geography import all_qld_sa2_codes, dim_geography, phn_bridge
 from lana.indicators import health_asr
-from lana.normalize import normalize
+from lana.normalise import normalise
 from lana.registry import REGISTRY
 
 _SEIFA_INDEX = {"IRSD": "irsd", "IRSAD": "irsad", "IER": "ier", "IEO": "ieo"}
@@ -150,7 +150,7 @@ def build_warehouse(settings: Settings | None = None, refresh: bool = False) -> 
             flow, sa2, cache_tag="qld", start_period=sp, end_period=ep,
             client=client, settings=s, refresh=refresh,
         )
-        return normalize(bronze, measure=measure)
+        return normalise(bronze, measure=measure)
 
     tables: dict[str, pl.DataFrame] = {
         "dim_geography": dim_geography(s),

@@ -11,7 +11,7 @@ import polars as pl
 
 from lana.config import Settings
 from lana.geography import geo_spine, rollup
-from lana.standardize import age_standardised_rate
+from lana.standardise import age_standardised_rate
 
 PERSONS = "3"  # sexp code for 'Persons'
 G19_DENOM = "Total (Persons)"

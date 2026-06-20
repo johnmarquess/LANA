@@ -8,9 +8,8 @@ __pycache__/
 # plans
 plans/
 
-# legacy reference projects (own git history + large venvs; kept locally, not tracked here)
-_ABS_Data/
-_CensusData/
+# Claude Code: keep shared settings + agents tracked, ignore personal overrides
+.claude/settings.local.json
 
 # data: ignore generated/fetched output; keep the small reference crosswalks needed to run
 data/*

@@ -20,7 +20,7 @@ def _is_geo_token(token: str) -> bool:
     return any(h in t for h in _GEO_HINTS)
 
 
-def normalize(
+def normalise(
     df: pl.DataFrame,
     *,
     measure: str = "value",
