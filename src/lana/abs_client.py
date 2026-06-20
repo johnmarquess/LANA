@@ -104,4 +104,6 @@ class ABSClient:
         text = self._get(url, _DATA_CSV, params=params).text
         if not text.strip():
             return pl.DataFrame()
-        return pl.read_csv(StringIO(text), infer_schema_length=2000)
+        # Scan the whole response (not just 2000 rows) so a column whose type
+        # appears later (e.g. OBS_VALUE integer then decimal) infers the supertype.
+        return pl.read_csv(StringIO(text), infer_schema_length=None)

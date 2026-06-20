@@ -1,6 +1,7 @@
 """ABS client DSD parsing and retry behaviour — pure functions, no network."""
 
 import httpx
+import polars as pl
 import pytest
 
 from lana import abs_client
@@ -48,8 +49,9 @@ def test_geography_dimension_raises_when_absent():
 class _FakeClient:
     """Context-manager stand-in for httpx.Client; .get returns a fixed status."""
 
-    def __init__(self, status: int):
+    def __init__(self, status: int, text: str = "ok"):
         self._status = status
+        self._text = text
 
     def __enter__(self):
         return self
@@ -58,7 +60,7 @@ class _FakeClient:
         return False
 
     def get(self, url, params=None, headers=None):
-        return httpx.Response(self._status, request=httpx.Request("GET", url), text="ok")
+        return httpx.Response(self._status, request=httpx.Request("GET", url), text=self._text)
 
 
 def _patch(monkeypatch, statuses):
@@ -91,3 +93,17 @@ def test_get_raises_runtimeerror_after_exhausting_retries(monkeypatch):
     _patch(monkeypatch, [503, 503, 503, 503])  # api_max_retries default = 4
     with pytest.raises(RuntimeError):
         ABSClient(Settings())._get("http://x", "application/json")
+
+
+def test_get_data_handles_type_change_after_inference_window(monkeypatch):
+    # OBS_VALUE is integer for >2000 rows then a decimal — full-scan inference must
+    # pick Float64 (not truncate at 2000 rows and fail to parse 1.5 as int).
+    n = 2001
+    rows = [f"100: A,{i}" for i in range(n)] + ["100: A,1.5"]
+    csv = "REGION: Region,OBS_VALUE\n" + "\n".join(rows)
+    monkeypatch.setattr(abs_client.httpx, "Client", lambda *a, **k: _FakeClient(200, text=csv))
+    monkeypatch.setattr(abs_client.time, "sleep", lambda *_: None)
+    df = ABSClient(Settings()).get_data("ABS,FLOW", "all")
+    assert df.height == n + 1
+    assert df["OBS_VALUE"].dtype == pl.Float64
+    assert df["OBS_VALUE"][-1] == 1.5
