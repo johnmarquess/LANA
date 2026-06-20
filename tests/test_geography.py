@@ -3,7 +3,14 @@
 import polars as pl
 import pytest
 
-from lana.geography import derive_parents, dim_geography, geo_spine, phn_bridge, rollup, target_sa2_codes
+from lana.geography import (
+    derive_parents,
+    dim_geography,
+    geo_spine,
+    phn_bridge,
+    rollup,
+    target_sa2_codes,
+)
 
 
 def test_derive_parents():

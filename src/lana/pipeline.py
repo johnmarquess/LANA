@@ -1,6 +1,6 @@
 """End-to-end orchestration: run the full 4-layer pipeline for one PHN.
 
-    uv run lana --phn "Western Queensland"
+uv run lana --phn "Western Queensland"
 """
 
 from __future__ import annotations
@@ -42,7 +42,9 @@ def run_phn(phn: str, settings: Settings | None = None, refresh: bool = False) -
     silver: dict[str, pl.DataFrame] = {}
     for key, (flow, measure, geo_dim) in SOURCES.items():
         print(f"Extracting {flow} ...")
-        bronze = extract_bronze(flow, sa2_codes, cache_tag=tag, client=client, settings=s, refresh=refresh)
+        bronze = extract_bronze(
+            flow, sa2_codes, cache_tag=tag, client=client, settings=s, refresh=refresh
+        )
         df = normalise(bronze, measure=measure, geo_dim=geo_dim)
         df.write_parquet(s.silver_dir / f"{flow}__{tag}.parquet")
         silver[key] = df

@@ -26,12 +26,14 @@ def test_std_pop_known_sums():
 def test_direct_asr_worked_example():
     # Two age groups, one region. Hand-computed against the real standard pops:
     # ASR = (0.1*3,987,198 + 0.2*2,655,157) / (3,987,198+2,655,157) * 100000
-    df = pl.DataFrame({
-        "region": ["A", "A"],
-        "agep_label": ["0-14 years", "15-24 years"],
-        "num": [100, 200],
-        "den": [1000, 1000],
-    })
+    df = pl.DataFrame(
+        {
+            "region": ["A", "A"],
+            "agep_label": ["0-14 years", "15-24 years"],
+            "num": [100, 200],
+            "den": [1000, 1000],
+        }
+    )
     res = age_standardised_rate(
         df, group_keys=["region"], age_label_col="agep_label", num_col="num", den_col="den"
     )
@@ -42,12 +44,14 @@ def test_direct_asr_worked_example():
 
 def test_zero_denominator_yields_null_not_nan():
     # A region with no population must give null rates, never NaN (xlsxwriter rejects NaN).
-    df = pl.DataFrame({
-        "region": ["Z", "Z"],
-        "agep_label": ["0-14 years", "15-24 years"],
-        "num": [0, 0],
-        "den": [0, 0],
-    })
+    df = pl.DataFrame(
+        {
+            "region": ["Z", "Z"],
+            "agep_label": ["0-14 years", "15-24 years"],
+            "num": [0, 0],
+            "den": [0, 0],
+        }
+    )
     res = age_standardised_rate(
         df, group_keys=["region"], age_label_col="agep_label", num_col="num", den_col="den"
     )

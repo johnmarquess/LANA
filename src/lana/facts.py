@@ -44,9 +44,8 @@ def build_fact(df: pl.DataFrame, spec: DomainSpec) -> pl.DataFrame:
     else:
         cats = work.filter(~pl.col(cat).is_in(list(spec.exclude_labels)))
 
-    counts = (
-        cats.group_by("sa2_code", "year", cat)
-        .agg(pl.col("value").sum().round(0).cast(pl.Int64).alias("count"))
+    counts = cats.group_by("sa2_code", "year", cat).agg(
+        pl.col("value").sum().round(0).cast(pl.Int64).alias("count")
     )
 
     if spec.denominator_label is not None:

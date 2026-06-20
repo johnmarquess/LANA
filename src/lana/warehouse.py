@@ -6,8 +6,6 @@ PHN/SA3/SA4/LGA are reachable by joining `dim_geography` on `sa2_code`.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import polars as pl
 
 from lana.abs_client import ABSClient
@@ -21,7 +19,12 @@ from lana.normalise import normalise
 from lana.registry import REGISTRY
 
 _SEIFA_INDEX = {"IRSD": "irsd", "IRSAD": "irsad", "IER": "ier", "IEO": "ieo"}
-_SEIFA_MEASURE = {"SCORE": "score", "RWAD": "decile_australia", "RWSD": "decile_state", "URP": "population"}
+_SEIFA_MEASURE = {
+    "SCORE": "score",
+    "RWAD": "decile_australia",
+    "RWSD": "decile_state",
+    "URP": "population",
+}
 
 
 # -- bespoke-shape facts ---------------------------------------------------
@@ -70,14 +73,12 @@ def build_seifa(seifa: pl.DataFrame) -> pl.DataFrame:
 
 
 def build_medians(g02: pl.DataFrame) -> pl.DataFrame:
-    return (
-        g02.select(
-            "sa2_code",
-            pl.col("year").alias("census_year"),
-            pl.col("medavg_label").alias("measure"),
-            "value",
-        ).sort("sa2_code", "measure")
-    )
+    return g02.select(
+        "sa2_code",
+        pl.col("year").alias("census_year"),
+        pl.col("medavg_label").alias("measure"),
+        "value",
+    ).sort("sa2_code", "measure")
 
 
 def build_health(g19: pl.DataFrame, settings: Settings) -> pl.DataFrame:
@@ -145,7 +146,9 @@ def _schema_md(tables: dict[str, pl.DataFrame]) -> str:
 
 
 # -- orchestrator ----------------------------------------------------------
-def build_warehouse(settings: Settings | None = None, refresh: bool = False) -> dict[str, pl.DataFrame]:
+def build_warehouse(
+    settings: Settings | None = None, refresh: bool = False
+) -> dict[str, pl.DataFrame]:
     s = settings or Settings()
     s.ensure_dirs()
     client = ABSClient(s)
@@ -153,10 +156,20 @@ def build_warehouse(settings: Settings | None = None, refresh: bool = False) -> 
     print(f"Building warehouse for {len(sa2)} QLD SA2s")
 
     def _norm(flow: str, *, timeseries: bool = False, measure: str = "value") -> pl.DataFrame:
-        sp, ep = (s.census_period_start, s.census_period_end) if timeseries else (s.census_year, s.census_year)
+        sp, ep = (
+            (s.census_period_start, s.census_period_end)
+            if timeseries
+            else (s.census_year, s.census_year)
+        )
         bronze = extract_bronze(
-            flow, sa2, cache_tag="qld", start_period=sp, end_period=ep,
-            client=client, settings=s, refresh=refresh,
+            flow,
+            sa2,
+            cache_tag="qld",
+            start_period=sp,
+            end_period=ep,
+            client=client,
+            settings=s,
+            refresh=refresh,
         )
         return normalise(bronze, measure=measure)
 
@@ -170,7 +183,9 @@ def build_warehouse(settings: Settings | None = None, refresh: bool = False) -> 
 
     for spec in REGISTRY:
         print(f"fact_{spec.name} ...")
-        tables[f"fact_{spec.name}"] = build_fact(_norm(spec.dataflow, timeseries=spec.timeseries), spec)
+        tables[f"fact_{spec.name}"] = build_fact(
+            _norm(spec.dataflow, timeseries=spec.timeseries), spec
+        )
 
     print("fact_health_conditions ...")
     tables["fact_health_conditions"] = build_health(_norm("C21_G19_SA2", measure="persons"), s)

@@ -45,5 +45,11 @@ class Settings(BaseSettings):
     warehouse_dir: Path = PROJECT_ROOT / "data" / "warehouse"
 
     def ensure_dirs(self) -> None:
-        for d in (self.bronze_dir, self.silver_dir, self.gold_dir, self.output_dir, self.warehouse_dir):
+        for d in (
+            self.bronze_dir,
+            self.silver_dir,
+            self.gold_dir,
+            self.output_dir,
+            self.warehouse_dir,
+        ):
             d.mkdir(parents=True, exist_ok=True)

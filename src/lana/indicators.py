@@ -10,7 +10,7 @@ from __future__ import annotations
 import polars as pl
 
 from lana.config import Settings
-from lana.geography import geo_spine, rollup
+from lana.geography import geo_spine
 from lana.standardise import age_standardised_rate
 
 PERSONS = "3"  # sexp code for 'Persons'
@@ -89,7 +89,9 @@ def seifa_sa2(seifa: pl.DataFrame) -> pl.DataFrame:
     metric = keep.filter(pl.col("seifa_measure").is_in(["SCORE", "RWAD"])).with_columns(
         (
             pl.col("idx")
-            + pl.when(pl.col("seifa_measure") == "SCORE").then(pl.lit("_score")).otherwise(pl.lit("_decile"))
+            + pl.when(pl.col("seifa_measure") == "SCORE")
+            .then(pl.lit("_score"))
+            .otherwise(pl.lit("_decile"))
         ).alias("col")
     )
     wide = metric.pivot(values="value", index="sa2_code", on="col", aggregate_function="first")
@@ -112,7 +114,9 @@ def seifa_phn_summary(seifa_sa2_df: pl.DataFrame, settings: Settings | None = No
             pl.col("irsd_decile").max().alias("irsd_decile_max"),
             pl.when(pl.col("urp").sum() > 0)
             .then(
-                ((pl.col("urp") * (pl.col("irsd_decile") <= 2)).sum() / pl.col("urp").sum() * 100).round(1)
+                (
+                    (pl.col("urp") * (pl.col("irsd_decile") <= 2)).sum() / pl.col("urp").sum() * 100
+                ).round(1)
             )
             .otherwise(None)
             .alias("pop_pct_in_bottom2_deciles"),
@@ -142,9 +146,7 @@ def _health_num_den(g19: pl.DataFrame) -> pl.DataFrame:
     return num.join(den, on=["sa2_code", "agep_label"], how="inner")
 
 
-def health_asr(
-    g19: pl.DataFrame, *, level: str, settings: Settings | None = None
-) -> pl.DataFrame:
+def health_asr(g19: pl.DataFrame, *, level: str, settings: Settings | None = None) -> pl.DataFrame:
     """Age-standardised + crude prevalence per 100,000 by condition at `level`.
 
     level: 'sa2' or 'phn'. Counts are aggregated to the level BEFORE standardising.
@@ -162,7 +164,12 @@ def health_asr(
         keys = ["sa2_code", "condition"]
 
     return age_standardised_rate(
-        base, group_keys=keys, age_label_col="agep_label", num_col="num", den_col="den", settings=settings
+        base,
+        group_keys=keys,
+        age_label_col="agep_label",
+        num_col="num",
+        den_col="den",
+        settings=settings,
     ).sort([keys[0], pl.col("asr")], descending=[False, True])
 
 
@@ -200,7 +207,8 @@ def build_gold(
 
     demo = demographic_sa2(g01).join(
         spine.select("sa2_code", "sa2_name", "sa3_name", "lga_name", "phn_name"),
-        on="sa2_code", how="left",
+        on="sa2_code",
+        how="left",
     )
     seif = seifa_sa2(seifa)
     h_sa2 = health_asr(g19, level="sa2", settings=s)
