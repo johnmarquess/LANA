@@ -67,7 +67,7 @@ The first run pulls ~13 dataflows in SA2 batches (a few minutes) and caches raw 
 
 ### Optional: per-PHN Excel workbook
 ```bash
-uv run lana --phn "Western Queensland"   # -> data/output/<phn>_needs_assessment.xlsx
+uv run lana --phn "Darling Downs and West Moreton"   # -> data/output/<phn>_needs_assessment.xlsx
 ```
 Sheets: Index, Demographic Baseline, Socio-Economic, SEIFA by PHN, Health-Risk (PHN & SA2),
 Equity-Gap. Valid PHN names: Brisbane North, Brisbane South, Central Queensland Wide Bay Sunshine
