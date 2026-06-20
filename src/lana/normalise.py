@@ -10,14 +10,14 @@ from __future__ import annotations
 
 import polars as pl
 
-_GEO_HINTS = ("REGION", "ASGS", "SA2", "SA1", "SA3", "SA4", "LGA", "STE")
+from lana.constants import GEO_HINTS
 
 
 def _is_geo_token(token: str) -> bool:
     t = token.upper()
     if t.endswith("_TYPE") or t.endswith("_STATUS"):
         return False
-    return any(h in t for h in _GEO_HINTS)
+    return any(h in t for h in GEO_HINTS)
 
 
 def normalise(

@@ -11,6 +11,7 @@ import polars as pl
 from lana.abs_client import ABSClient
 from lana.attribution import attribution_text
 from lana.config import Settings
+from lana.constants import SEIFA_INDEXES
 from lana.extract import extract_bronze
 from lana.facts import build_fact
 from lana.geography import all_qld_sa2_codes, dim_geography, phn_bridge
@@ -18,7 +19,6 @@ from lana.indicators import health_asr
 from lana.normalise import normalise
 from lana.registry import REGISTRY
 
-_SEIFA_INDEX = {"IRSD": "irsd", "IRSAD": "irsad", "IER": "ier", "IEO": "ieo"}
 _SEIFA_MEASURE = {
     "SCORE": "score",
     "RWAD": "decile_australia",
@@ -59,11 +59,11 @@ def build_seifa(seifa: pl.DataFrame) -> pl.DataFrame:
     """Long SEIFA: one row per (sa2, index, measure) with a tidy value."""
     return (
         seifa.filter(
-            pl.col("seifaindextype").is_in(list(_SEIFA_INDEX))
+            pl.col("seifaindextype").is_in(list(SEIFA_INDEXES))
             & pl.col("seifa_measure").is_in(list(_SEIFA_MEASURE))
         )
         .with_columns(
-            pl.col("seifaindextype").replace(_SEIFA_INDEX).alias("index"),
+            pl.col("seifaindextype").replace(SEIFA_INDEXES).alias("index"),
             pl.col("seifa_measure").replace(_SEIFA_MEASURE).alias("measure"),
             pl.col("year").alias("census_year"),
         )
