@@ -14,15 +14,13 @@ import httpx
 import polars as pl
 
 from lana.config import Settings
+from lana.constants import GEO_HINTS
 
 _STRUCTURE_JSON = "application/vnd.sdmx.structure+json"
 _DATA_CSV = "application/vnd.sdmx.data+csv;labels=both"
 
 # Transient HTTP statuses worth retrying; other 4xx (e.g. 404) are not.
 _RETRYABLE_STATUS = (429, 500, 502, 503, 504)
-
-# Dimension-id fragments that identify the geography dimension across GCP/SEIFA dataflows.
-_GEO_HINTS = ("REGION", "ASGS", "SA2", "SA1", "SA3", "SA4", "LGA", "STE")
 
 
 class ABSClient:
@@ -83,7 +81,7 @@ class ABSClient:
     @classmethod
     def geography_dimension(cls, structure: dict) -> str:
         for dim in cls.dimension_order(structure):
-            if any(h in dim.upper() for h in _GEO_HINTS):
+            if any(h in dim.upper() for h in GEO_HINTS):
                 return dim
         raise ValueError("Could not locate a geography dimension in the DSD")
 

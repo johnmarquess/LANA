@@ -10,6 +10,7 @@ from __future__ import annotations
 import polars as pl
 
 from lana.config import Settings
+from lana.constants import SEIFA_INDEXES
 from lana.geography import geo_spine
 from lana.standardise import age_standardised_rate
 
@@ -17,9 +18,6 @@ PERSONS = "3"  # sexp code for 'Persons'
 G19_DENOM = "Total (Persons)"
 G19_NON_CONDITIONS = {G19_DENOM, "No long-term health condition(s)", "Not stated"}
 AGE_TOTAL = "Total"
-
-# SEIFA: index code -> friendly prefix; we surface SCORE + national decile (RWAD).
-SEIFA_INDEXES = {"IRSD": "irsd", "IRSAD": "irsad", "IER": "ier", "IEO": "ieo"}
 
 
 # --------------------------------------------------------------------------
