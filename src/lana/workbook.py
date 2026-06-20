@@ -11,6 +11,8 @@ from pathlib import Path
 import polars as pl
 import xlsxwriter
 
+from lana.attribution import ATTRIBUTION, DISCLAIMER
+
 
 def _index_frame(meta: dict[str, str]) -> pl.DataFrame:
     return pl.DataFrame({"Item": list(meta.keys()), "Detail": list(meta.values())})
@@ -29,7 +31,11 @@ def _finite(df: pl.DataFrame) -> pl.DataFrame:
 def write_workbook(path: Path, gold: dict[str, pl.DataFrame], meta: dict[str, str]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with xlsxwriter.Workbook(str(path)) as wb:
-        _index_frame(meta).write_excel(wb, worksheet="Index", autofit=True, header_format={"bold": True})
+        index = pl.concat([
+            _index_frame(meta),
+            pl.DataFrame({"Item": ["Attribution", "Disclaimer"], "Detail": [ATTRIBUTION, DISCLAIMER]}),
+        ])
+        index.write_excel(wb, worksheet="Index", autofit=True, header_format={"bold": True})
 
         sheets = [
             ("Demographic Baseline", gold["demographic"].select(

@@ -161,8 +161,16 @@ give appropriate credit.
 
 > © 2026 John Marquess. When reusing, attribute as: *"LANA by John Marquess, licensed under CC BY 4.0."*
 
-## Data source & attribution
+## Data sources & attribution
 
-Built on data from the **Australian Bureau of Statistics**, used under
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). SEIFA and Census data © Commonwealth of
-Australia (ABS). This project is an independent tool and is not endorsed by the ABS.
+LANA is built on open government data — the **Australian Bureau of Statistics** (Census 2021,
+SEIFA 2021, the age-standardisation Standard Population, and ASGS geography) and the
+**Australian Government Department of Health, Disability and Ageing** (PHN 2023 → SA2 concordance),
+each used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Full source list,
+catalogue numbers and the attribution statement are in [`ATTRIBUTION.md`](ATTRIBUTION.md), and a
+copy travels with every generated output (`data/warehouse/ATTRIBUTION.txt`, `schema.md`, and the
+workbook's Index sheet).
+
+**Modifications & non-endorsement.** LANA transforms, aggregates and age-standardises the source
+data; these derived results are LANA's own and are **not endorsed by, affiliated with, or
+guaranteed by** the ABS or the Department of Health.
