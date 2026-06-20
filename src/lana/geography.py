@@ -14,10 +14,14 @@ from lana.config import Settings
 _spine_cache: dict[str, pl.DataFrame] = {}
 
 _CORR_RENAME = {
-    "SA2_CODE_2021": "sa2_code", "SA2_NAME_2021": "sa2_name",
-    "SA3_CODE_2021": "sa3_code", "SA3_NAME_2021": "sa3_name",
-    "SA4_CODE_2021": "sa4_code", "SA4_NAME_2021": "sa4_name",
-    "LGA_CODE_2021": "lga_code", "LGA_NAME_2021": "lga_name",
+    "SA2_CODE_2021": "sa2_code",
+    "SA2_NAME_2021": "sa2_name",
+    "SA3_CODE_2021": "sa3_code",
+    "SA3_NAME_2021": "sa3_name",
+    "SA4_CODE_2021": "sa4_code",
+    "SA4_NAME_2021": "sa4_name",
+    "LGA_CODE_2021": "lga_code",
+    "LGA_NAME_2021": "lga_name",
 }
 
 
@@ -73,8 +77,15 @@ def phn_bridge(settings: Settings | None = None) -> pl.DataFrame:
 def dim_geography(settings: Settings | None = None) -> pl.DataFrame:
     """The geography dimension table for the warehouse (one row per SA2)."""
     return geo_spine(settings).select(
-        "sa2_code", "sa2_name", "sa3_code", "sa3_name",
-        "sa4_code", "sa4_name", "lga_code", "lga_name", "phn_name",
+        "sa2_code",
+        "sa2_name",
+        "sa3_code",
+        "sa3_name",
+        "sa4_code",
+        "sa4_name",
+        "lga_code",
+        "lga_name",
+        "phn_name",
     )
 
 

@@ -31,16 +31,30 @@ def _finite(df: pl.DataFrame) -> pl.DataFrame:
 def write_workbook(path: Path, gold: dict[str, pl.DataFrame], meta: dict[str, str]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with xlsxwriter.Workbook(str(path)) as wb:
-        index = pl.concat([
-            _index_frame(meta),
-            pl.DataFrame({"Item": ["Attribution", "Disclaimer"], "Detail": [ATTRIBUTION, DISCLAIMER]}),
-        ])
+        index = pl.concat(
+            [
+                _index_frame(meta),
+                pl.DataFrame(
+                    {"Item": ["Attribution", "Disclaimer"], "Detail": [ATTRIBUTION, DISCLAIMER]}
+                ),
+            ]
+        )
         index.write_excel(wb, worksheet="Index", autofit=True, header_format={"bold": True})
 
         sheets = [
-            ("Demographic Baseline", gold["demographic"].select(
-                "sa2_code", "sa2_name", "sa3_name", "lga_name",
-                "total_pop", "indigenous_pct", "other_language_pct", "year12_pct")),
+            (
+                "Demographic Baseline",
+                gold["demographic"].select(
+                    "sa2_code",
+                    "sa2_name",
+                    "sa3_name",
+                    "lga_name",
+                    "total_pop",
+                    "indigenous_pct",
+                    "other_language_pct",
+                    "year12_pct",
+                ),
+            ),
             ("Socio-Economic", gold["socioeconomic"]),
             ("SEIFA by PHN", gold["seifa_phn"]),
             ("Health-Risk (PHN)", gold["health_phn"]),

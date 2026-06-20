@@ -6,14 +6,19 @@ from lana.normalise import normalise
 
 
 def _raw():
-    return pl.DataFrame({
-        "DATAFLOW": ["ABS:C21_G01_SA2", "ABS:C21_G01_SA2"],
-        "SEXP: Sex": ["3: Persons", "1: Males"],
-        "REGION: Region": ["315031408: Barcaldine - Blackall", "307011171: Balonne"],
-        "REGION_TYPE: Region Type": ["SA2: Statistical Area Level 2", "SA2: Statistical Area Level 2"],
-        "TIME_PERIOD: Time Period": ["2021", "2021"],
-        "OBS_VALUE": ["123", "45"],
-    })
+    return pl.DataFrame(
+        {
+            "DATAFLOW": ["ABS:C21_G01_SA2", "ABS:C21_G01_SA2"],
+            "SEXP: Sex": ["3: Persons", "1: Males"],
+            "REGION: Region": ["315031408: Barcaldine - Blackall", "307011171: Balonne"],
+            "REGION_TYPE: Region Type": [
+                "SA2: Statistical Area Level 2",
+                "SA2: Statistical Area Level 2",
+            ],
+            "TIME_PERIOD: Time Period": ["2021", "2021"],
+            "OBS_VALUE": ["123", "45"],
+        }
+    )
 
 
 def test_code_label_split_and_casts():

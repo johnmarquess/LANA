@@ -41,7 +41,7 @@ class ABSClient:
                 return r
             except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError) as e:
                 last_exc = e
-                wait = 2.0 ** attempt
+                wait = 2.0**attempt
                 time.sleep(wait)
         raise RuntimeError(f"ABS API request failed after retries: {url}") from last_exc
 

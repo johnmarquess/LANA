@@ -81,14 +81,13 @@ def age_standardised_rate(
     Returns one row per group with `asr` (per `per`) and `crude` for comparison.
     """
     std = std_pop_table(df[age_label_col].to_list(), settings)
-    work = (
-        df.join(std, left_on=age_label_col, right_on="age_label", how="inner")  # drops totals
-        .with_columns(
-            pl.when(pl.col(den_col) > 0)
-            .then(pl.col(num_col) / pl.col(den_col) * pl.col("std_pop"))
-            .otherwise(0.0)
-            .alias("_expected")
-        )
+    work = df.join(
+        std, left_on=age_label_col, right_on="age_label", how="inner"
+    ).with_columns(  # drops totals
+        pl.when(pl.col(den_col) > 0)
+        .then(pl.col(num_col) / pl.col(den_col) * pl.col("std_pop"))
+        .otherwise(0.0)
+        .alias("_expected")
     )
     return (
         work.group_by(group_keys)

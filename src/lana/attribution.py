@@ -12,21 +12,31 @@ from __future__ import annotations
 
 # (publisher, title/product, reference)
 SOURCES: list[tuple[str, str, str]] = [
-    ("Australian Bureau of Statistics",
-     "Census of Population and Housing, 2021 — General Community Profile & Time Series Profile",
-     "DataPacks released 12 October 2022"),
-    ("Australian Bureau of Statistics",
-     "Census of Population and Housing: Socio-Economic Indexes for Areas (SEIFA), Australia, 2021",
-     "cat. no. 2033.0.55.001, released 27 April 2023"),
-    ("Australian Bureau of Statistics",
-     "Standard Population for use in Age-Standardisation (2001 estimated resident population)",
-     "from National, state and territory population, cat. no. 3101.0"),
-    ("Australian Bureau of Statistics",
-     "Australian Statistical Geography Standard (ASGS) Edition 3, 2021 — SA2/SA3/SA4/LGA correspondences",
-     "released July 2021"),
-    ("Australian Government Department of Health, Disability and Ageing",
-     "Primary Health Networks (PHN) (2023) – Statistical Area Level 2 (2021) concordance",
-     "published at health.gov.au"),
+    (
+        "Australian Bureau of Statistics",
+        "Census of Population and Housing, 2021 — General Community Profile & Time Series Profile",
+        "DataPacks released 12 October 2022",
+    ),
+    (
+        "Australian Bureau of Statistics",
+        "Census of Population and Housing: Socio-Economic Indexes for Areas (SEIFA), Australia, 2021",
+        "cat. no. 2033.0.55.001, released 27 April 2023",
+    ),
+    (
+        "Australian Bureau of Statistics",
+        "Standard Population for use in Age-Standardisation (2001 estimated resident population)",
+        "from National, state and territory population, cat. no. 3101.0",
+    ),
+    (
+        "Australian Bureau of Statistics",
+        "Australian Statistical Geography Standard (ASGS) Edition 3, 2021 — SA2/SA3/SA4/LGA correspondences",
+        "released July 2021",
+    ),
+    (
+        "Australian Government Department of Health, Disability and Ageing",
+        "Primary Health Networks (PHN) (2023) – Statistical Area Level 2 (2021) concordance",
+        "published at health.gov.au",
+    ),
 ]
 
 CC_BY_URL = "https://creativecommons.org/licenses/by/4.0/"
