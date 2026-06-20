@@ -26,6 +26,17 @@ _RETRYABLE_STATUS = (429, 500, 502, 503, 504)
 class ABSClient:
     def __init__(self, settings: Settings | None = None):
         self.s = settings or Settings()
+        # One client reused across requests (connection pooling/keep-alive).
+        self._client = httpx.Client(timeout=self.s.api_timeout)
+
+    def close(self) -> None:
+        self._client.close()
+
+    def __enter__(self) -> ABSClient:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
 
     # -- low level ---------------------------------------------------------
     def _get(self, url: str, accept: str, params: dict | None = None) -> httpx.Response:
@@ -39,8 +50,7 @@ class ABSClient:
         last_exc: Exception | None = None
         for attempt in range(self.s.api_max_retries):
             try:
-                with httpx.Client(timeout=self.s.api_timeout) as c:
-                    r = c.get(url, params=params, headers={"Accept": accept})
+                r = self._client.get(url, params=params, headers={"Accept": accept})
             except (httpx.TimeoutException, httpx.TransportError) as e:
                 last_exc = e
                 time.sleep(2.0**attempt)
