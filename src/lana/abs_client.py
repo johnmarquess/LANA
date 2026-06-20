@@ -18,6 +18,9 @@ from lana.config import Settings
 _STRUCTURE_JSON = "application/vnd.sdmx.structure+json"
 _DATA_CSV = "application/vnd.sdmx.data+csv;labels=both"
 
+# Transient HTTP statuses worth retrying; other 4xx (e.g. 404) are not.
+_RETRYABLE_STATUS = (429, 500, 502, 503, 504)
+
 # Dimension-id fragments that identify the geography dimension across GCP/SEIFA dataflows.
 _GEO_HINTS = ("REGION", "ASGS", "SA2", "SA1", "SA3", "SA4", "LGA", "STE")
 
@@ -28,22 +31,34 @@ class ABSClient:
 
     # -- low level ---------------------------------------------------------
     def _get(self, url: str, accept: str, params: dict | None = None) -> httpx.Response:
-        """GET with exponential backoff on timeout / 429 / 5xx."""
+        """GET with exponential backoff on transient failures.
+
+        Retries timeouts, transport errors and transient HTTP statuses
+        (429/5xx). Non-retryable client errors (e.g. 404 from a wrong dataflow
+        id) are raised immediately with the real status, not masked behind a
+        generic "failed after retries" error.
+        """
         last_exc: Exception | None = None
         for attempt in range(self.s.api_max_retries):
             try:
                 with httpx.Client(timeout=self.s.api_timeout) as c:
                     r = c.get(url, params=params, headers={"Accept": accept})
-                if r.status_code in (429, 500, 502, 503, 504):
-                    raise httpx.HTTPStatusError("retryable", request=r.request, response=r)
-                r.raise_for_status()
-                time.sleep(self.s.api_throttle_seconds)  # polite spacing
-                return r
-            except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError) as e:
+            except (httpx.TimeoutException, httpx.TransportError) as e:
                 last_exc = e
-                wait = 2.0**attempt
-                time.sleep(wait)
-        raise RuntimeError(f"ABS API request failed after retries: {url}") from last_exc
+                time.sleep(2.0**attempt)
+                continue
+            if r.status_code in _RETRYABLE_STATUS:
+                last_exc = httpx.HTTPStatusError(
+                    f"HTTP {r.status_code}", request=r.request, response=r
+                )
+                time.sleep(2.0**attempt)
+                continue
+            r.raise_for_status()  # non-retryable 4xx surface immediately
+            time.sleep(self.s.api_throttle_seconds)  # polite spacing
+            return r
+        raise RuntimeError(
+            f"ABS API request failed after {self.s.api_max_retries} retries: {url}"
+        ) from last_exc
 
     # -- structure ---------------------------------------------------------
     def get_structure(self, dataflow_id: str) -> dict:
