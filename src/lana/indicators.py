@@ -221,10 +221,23 @@ def equity_sa2(
 # Orchestrate the gold layer
 # --------------------------------------------------------------------------
 def build_gold(
-    g01: pl.DataFrame, g19: pl.DataFrame, seifa: pl.DataFrame, *, settings: Settings | None = None
+    g01: pl.DataFrame,
+    g19: pl.DataFrame,
+    seifa: pl.DataFrame,
+    *,
+    phn: str,
+    settings: Settings | None = None,
 ) -> dict[str, pl.DataFrame]:
+    """Build the gold layer for a single target PHN.
+
+    `phn` must be the authoritative PHN name from the crosswalk. All PHN-level
+    aggregations use the many-to-many bridge so straddling SA2s are included in
+    both their PHNs' workbooks and never produce phantom rows for other PHNs.
+    """
     s = settings or Settings()
     spine = geo_spine(s)
+    bridge = phn_bridge(s)
+    phn_sa2s = bridge.filter(pl.col("phn_name") == phn)["sa2_code"]
 
     demo = demographic_sa2(g01).join(
         spine.select("sa2_code", "sa2_name", "sa3_name", "lga_name", "phn_name"),
@@ -233,16 +246,16 @@ def build_gold(
     )
     seif = seifa_sa2(seifa)
     h_sa2 = health_asr(g19, level="sa2", settings=s)
-    h_phn = health_asr(g19, level="phn", settings=s)
+    h_phn = health_asr(g19, level="phn", phn=phn, settings=s)
     default_condition, equity = equity_sa2(h_sa2, seif, demo)
 
     return {
-        "geography": spine.filter(pl.col("phn_name") == s.target_phn),
+        "geography": spine.filter(pl.col("sa2_code").is_in(phn_sa2s)),
         "demographic": demo,
         "socioeconomic": seif.join(
             spine.select("sa2_code", "sa2_name", "phn_name"), on="sa2_code", how="left"
         ),
-        "seifa_phn": seifa_phn_summary(seif, s),
+        "seifa_phn": seifa_phn_summary(seif, phn=phn, settings=s),
         "health_sa2": h_sa2,
         "health_phn": h_phn,
         "equity": equity,
