@@ -237,7 +237,7 @@ def build_gold(
     s = settings or Settings()
     spine = geo_spine(s)
     bridge = phn_bridge(s)
-    phn_sa2s = bridge.filter(pl.col("phn_name") == phn)["sa2_code"]
+    phn_sa2s = bridge.filter(pl.col("phn_name") == phn)["sa2_code"].to_list()
 
     demo = demographic_sa2(g01).join(
         spine.select("sa2_code", "sa2_name", "sa3_name", "lga_name", "phn_name"),
