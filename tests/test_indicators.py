@@ -404,3 +404,100 @@ def test_seifa_phn_summary_pop_pct_bottom2_deciles_is_urp_weighted():
     out = seifa_phn_summary(seif_df)
     row = out.filter(pl.col("phn_name") == "Western Queensland").to_dicts()[0]
     assert row["pop_pct_in_bottom2_deciles"] == 50.0
+
+
+# ---------------------------------------------------------------------------
+# Straddler behaviour — SA2 309041242 (Tamborine-Canungra) straddles
+# Gold Coast AND Brisbane South; it must be included in both and must not
+# produce phantom rows for a third PHN.
+# ---------------------------------------------------------------------------
+
+_STRADDLER = "309041242"  # Tamborine-Canungra: Gold Coast + Brisbane South
+
+
+def _g19_straddler() -> pl.DataFrame:
+    """Minimal G19 silver for the straddling SA2 only (Total=10, Arthritis=4 per age)."""
+    rows = []
+    for age in ["0-4 years", "5-14 years"]:
+        rows.append(
+            {
+                "sa2_code": _STRADDLER,
+                "sexp": "3",
+                "sexp_label": "Persons",
+                "agep_label": age,
+                "lthp_label": "Total (Persons)",
+                "persons": 10.0,
+            }
+        )
+        rows.append(
+            {
+                "sa2_code": _STRADDLER,
+                "sexp": "3",
+                "sexp_label": "Persons",
+                "agep_label": age,
+                "lthp_label": "Arthritis",
+                "persons": 4.0,
+            }
+        )
+    return pl.DataFrame(rows)
+
+
+def _seifa_straddler() -> pl.DataFrame:
+    """Minimal SEIFA silver for the straddling SA2 only."""
+    return pl.DataFrame(
+        {
+            "sa2_code": [_STRADDLER],
+            "irsd_score": [950.0],
+            "irsd_decile": [5.0],
+            "urp": [1000.0],
+        }
+    )
+
+
+def test_health_asr_straddler_included_in_both_phns():
+    """health_asr(level='phn', phn=X) must include the straddling SA2 under each PHN.
+
+    The arbitrary-primary geo_spine assignment would have dropped 309041242 from
+    one of its two PHNs; the bridge keeps it in both. den == 20 (10+10 across the
+    two age groups) under EACH of Gold Coast and Brisbane South.
+    """
+    g19 = _g19_straddler()
+
+    gc_out = health_asr(g19, level="phn", phn="Gold Coast")
+    bs_out = health_asr(g19, level="phn", phn="Brisbane South")
+
+    gc_row = gc_out.filter(pl.col("condition") == "Arthritis").to_dicts()[0]
+    assert gc_row["denominator"] == 20
+
+    bs_row = bs_out.filter(pl.col("condition") == "Arthritis").to_dicts()[0]
+    assert bs_row["denominator"] == 20
+
+
+def test_health_asr_no_phantom_phn_rows():
+    """health_asr(level='phn', phn='Gold Coast') must produce exactly one PHN row."""
+    g19 = _g19_straddler()
+    out = health_asr(g19, level="phn", phn="Gold Coast")
+    assert out["phn_name"].n_unique() == 1
+    assert out["phn_name"][0] == "Gold Coast"
+
+
+def test_seifa_phn_summary_straddler_included_in_both_phns():
+    """seifa_phn_summary(phn=X) must include the straddling SA2 under each PHN."""
+    seif = _seifa_straddler()
+
+    gc_out = seifa_phn_summary(seif, phn="Gold Coast")
+    bs_out = seifa_phn_summary(seif, phn="Brisbane South")
+
+    gc_row = gc_out.filter(pl.col("phn_name") == "Gold Coast").to_dicts()[0]
+    assert gc_row["n_sa2"] == 1
+
+    bs_row = bs_out.filter(pl.col("phn_name") == "Brisbane South").to_dicts()[0]
+    assert bs_row["n_sa2"] == 1
+
+
+def test_seifa_phn_summary_no_phantom_phn_rows():
+    """seifa_phn_summary(phn='Gold Coast') must produce exactly one PHN row."""
+    seif = _seifa_straddler()
+    out = seifa_phn_summary(seif, phn="Gold Coast")
+    assert out.height == 1
+    assert out["phn_name"][0] == "Gold Coast"

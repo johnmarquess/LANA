@@ -11,7 +11,7 @@ import polars as pl
 
 from lana.config import Settings
 from lana.constants import SEIFA_INDEXES
-from lana.geography import geo_spine
+from lana.geography import geo_spine, phn_bridge
 from lana.standardise import age_standardised_rate
 
 PERSONS = "3"  # sexp code for 'Persons'
@@ -96,14 +96,25 @@ def seifa_sa2(seifa: pl.DataFrame) -> pl.DataFrame:
     return wide.join(urp, on="sa2_code", how="left").sort("sa2_code")
 
 
-def seifa_phn_summary(seifa_sa2_df: pl.DataFrame, settings: Settings | None = None) -> pl.DataFrame:
+def seifa_phn_summary(
+    seifa_sa2_df: pl.DataFrame,
+    *,
+    phn: str | None = None,
+    settings: Settings | None = None,
+) -> pl.DataFrame:
     """PHN-level SEIFA: deciles can't be averaged, so summarise the SA2 distribution.
 
     Population-weighted (URP) median national IRSD decile + share of population in
     the two most-disadvantaged deciles.
+
+    If `phn` is given, only that PHN's members (via the bridge) are aggregated and a
+    single row is returned. Without `phn`, all PHNs are returned (useful for the
+    warehouse path where no single target PHN exists).
     """
-    spine = geo_spine(settings).select("sa2_code", "phn_name")
-    df = seifa_sa2_df.join(spine, on="sa2_code", how="left")
+    bridge = phn_bridge(settings).select("sa2_code", "phn_name")
+    df = seifa_sa2_df.join(bridge, on="sa2_code", how="left")
+    if phn is not None:
+        df = df.filter(pl.col("phn_name") == phn)
     return (
         df.group_by("phn_name")
         .agg(
@@ -144,18 +155,30 @@ def _health_num_den(g19: pl.DataFrame) -> pl.DataFrame:
     return num.join(den, on=["sa2_code", "agep_label"], how="inner")
 
 
-def health_asr(g19: pl.DataFrame, *, level: str, settings: Settings | None = None) -> pl.DataFrame:
+def health_asr(
+    g19: pl.DataFrame,
+    *,
+    level: str,
+    phn: str | None = None,
+    settings: Settings | None = None,
+) -> pl.DataFrame:
     """Age-standardised + crude prevalence per 100,000 by condition at `level`.
 
     level: 'sa2' or 'phn'. Counts are aggregated to the level BEFORE standardising.
+
+    When level == 'phn', the join uses the authoritative many-to-many bridge so
+    straddling SA2s are included in both their PHNs. If `phn` is given, only that
+    PHN's rows are kept after the join (prevents straddling SA2s from emitting a
+    phantom row for the other PHN in a single-PHN workbook).
     """
     base = _health_num_den(g19)
     if level == "phn":
-        spine = geo_spine(settings).select("sa2_code", "phn_name")
-        base = (
-            base.join(spine, on="sa2_code", how="left")
-            .group_by("phn_name", "condition", "agep_label")
-            .agg(pl.col("num").sum(), pl.col("den").sum())
+        bridge = phn_bridge(settings).select("sa2_code", "phn_name")
+        joined = base.join(bridge, on="sa2_code", how="left")
+        if phn is not None:
+            joined = joined.filter(pl.col("phn_name") == phn)
+        base = joined.group_by("phn_name", "condition", "agep_label").agg(
+            pl.col("num").sum(), pl.col("den").sum()
         )
         keys = ["phn_name", "condition"]
     else:
@@ -198,10 +221,23 @@ def equity_sa2(
 # Orchestrate the gold layer
 # --------------------------------------------------------------------------
 def build_gold(
-    g01: pl.DataFrame, g19: pl.DataFrame, seifa: pl.DataFrame, *, settings: Settings | None = None
+    g01: pl.DataFrame,
+    g19: pl.DataFrame,
+    seifa: pl.DataFrame,
+    *,
+    phn: str,
+    settings: Settings | None = None,
 ) -> dict[str, pl.DataFrame]:
+    """Build the gold layer for a single target PHN.
+
+    `phn` must be the authoritative PHN name from the crosswalk. All PHN-level
+    aggregations use the many-to-many bridge so straddling SA2s are included in
+    both their PHNs' workbooks and never produce phantom rows for other PHNs.
+    """
     s = settings or Settings()
     spine = geo_spine(s)
+    bridge = phn_bridge(s)
+    phn_sa2s = bridge.filter(pl.col("phn_name") == phn)["sa2_code"].to_list()
 
     demo = demographic_sa2(g01).join(
         spine.select("sa2_code", "sa2_name", "sa3_name", "lga_name", "phn_name"),
@@ -210,16 +246,16 @@ def build_gold(
     )
     seif = seifa_sa2(seifa)
     h_sa2 = health_asr(g19, level="sa2", settings=s)
-    h_phn = health_asr(g19, level="phn", settings=s)
+    h_phn = health_asr(g19, level="phn", phn=phn, settings=s)
     default_condition, equity = equity_sa2(h_sa2, seif, demo)
 
     return {
-        "geography": spine.filter(pl.col("phn_name") == s.target_phn),
+        "geography": spine.filter(pl.col("sa2_code").is_in(phn_sa2s)),
         "demographic": demo,
         "socioeconomic": seif.join(
             spine.select("sa2_code", "sa2_name", "phn_name"), on="sa2_code", how="left"
         ),
-        "seifa_phn": seifa_phn_summary(seif, s),
+        "seifa_phn": seifa_phn_summary(seif, phn=phn, settings=s),
         "health_sa2": h_sa2,
         "health_phn": h_phn,
         "equity": equity,

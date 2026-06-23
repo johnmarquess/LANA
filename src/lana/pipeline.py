@@ -50,7 +50,7 @@ def run_phn(phn: str, settings: Settings | None = None, refresh: bool = False) -
         silver[key] = df
 
     print("Building gold layer ...")
-    gold = build_gold(silver["g01"], silver["g19"], silver["seifa"], settings=s)
+    gold = build_gold(silver["g01"], silver["g19"], silver["seifa"], phn=phn, settings=s)
 
     for name, df in gold.items():
         if not name.startswith("_"):

@@ -90,11 +90,15 @@ def dim_geography(settings: Settings | None = None) -> pl.DataFrame:
 
 
 def target_sa2_codes(phn_name: str, settings: Settings | None = None) -> list[str]:
-    """SA2 codes belonging to a PHN. Raises if the PHN name is unknown."""
-    spine = geo_spine(settings)
-    codes = spine.filter(pl.col("phn_name") == phn_name)["sa2_code"].to_list()
+    """SA2 codes belonging to a PHN (via the authoritative many-to-many bridge).
+
+    A straddling SA2 appears in both its PHNs' member lists. Raises if the PHN
+    name is not present in the crosswalk.
+    """
+    bridge = phn_bridge(settings)
+    codes = bridge.filter(pl.col("phn_name") == phn_name)["sa2_code"].to_list()
     if not codes:
-        known = sorted(spine["phn_name"].drop_nulls().unique().to_list())
+        known = sorted(bridge["phn_name"].drop_nulls().unique().to_list())
         raise ValueError(f"Unknown PHN '{phn_name}'. Known: {known}")
     return codes
 
