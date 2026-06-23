@@ -53,13 +53,15 @@ class ABSClient:
                 r = self._client.get(url, params=params, headers={"Accept": accept})
             except (httpx.TimeoutException, httpx.TransportError) as e:
                 last_exc = e
-                time.sleep(2.0**attempt)
+                if attempt < self.s.api_max_retries - 1:
+                    time.sleep(2.0**attempt)
                 continue
             if r.status_code in _RETRYABLE_STATUS:
                 last_exc = httpx.HTTPStatusError(
                     f"HTTP {r.status_code}", request=r.request, response=r
                 )
-                time.sleep(2.0**attempt)
+                if attempt < self.s.api_max_retries - 1:
+                    time.sleep(2.0**attempt)
                 continue
             r.raise_for_status()  # non-retryable 4xx surface immediately
             time.sleep(self.s.api_throttle_seconds)  # polite spacing

@@ -18,11 +18,11 @@ from lana.indicators import build_gold
 from lana.normalise import normalise
 from lana.workbook import write_workbook
 
-# (dataflow_id, measure_name, geography_dimension_id)
+# (dataflow_id, measure_name) — geo-dim is auto-detected via GEO_HINTS
 SOURCES = {
-    "g01": ("C21_G01_SA2", "persons", "REGION"),
-    "g19": ("C21_G19_SA2", "persons", "REGION"),
-    "seifa": ("ABS_SEIFA2021_SA2", "value", "ASGS_2021"),
+    "g01": ("C21_G01_SA2", "persons"),
+    "g19": ("C21_G19_SA2", "persons"),
+    "seifa": ("ABS_SEIFA2021_SA2", "value"),
 }
 
 
@@ -40,12 +40,12 @@ def run_phn(phn: str, settings: Settings | None = None, refresh: bool = False) -
     print(f"PHN '{phn}': {len(sa2_codes)} SA2s")
 
     silver: dict[str, pl.DataFrame] = {}
-    for key, (flow, measure, geo_dim) in SOURCES.items():
+    for key, (flow, measure) in SOURCES.items():
         print(f"Extracting {flow} ...")
         bronze = extract_bronze(
             flow, sa2_codes, cache_tag=tag, client=client, settings=s, refresh=refresh
         )
-        df = normalise(bronze, measure=measure, geo_dim=geo_dim)
+        df = normalise(bronze, measure=measure)
         df.write_parquet(s.silver_dir / f"{flow}__{tag}.parquet")
         silver[key] = df
 
