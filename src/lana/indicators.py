@@ -120,7 +120,8 @@ def seifa_phn_summary(
         df.group_by("phn_name")
         .agg(
             pl.col("irsd_decile").min().alias("irsd_decile_min"),
-            pl.col("irsd_decile").median().alias("irsd_decile_median"),  # ponytail: unweighted median; switch to a population-weighted median if PHN disadvantage summaries need it
+            # ponytail: unweighted median; switch to a population-weighted median if PHN disadvantage summaries need it
+            pl.col("irsd_decile").median().alias("irsd_decile_median"),
             pl.col("irsd_decile").max().alias("irsd_decile_max"),
             pl.when(pl.col("urp").sum() > 0)
             .then(
