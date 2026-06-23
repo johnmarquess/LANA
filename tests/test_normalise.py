@@ -43,3 +43,29 @@ def test_value_without_colon():
     out = normalise(df, measure="persons")
     assert out["sexp"].to_list() == ["Total"]
     assert out["sexp_label"].to_list() == [None]
+
+
+def test_auto_detect_region_geo_dim():
+    # REGION column auto-detected as geography without passing geo_dim.
+    df = pl.DataFrame(
+        {
+            "REGION: Region": ["315031408: Barcaldine - Blackall"],
+            "OBS_VALUE": ["99"],
+        }
+    )
+    out = normalise(df, measure="persons")
+    assert out["sa2_code"].to_list() == ["315031408"]
+    assert out["sa2_name"].to_list() == ["Barcaldine - Blackall"]
+
+
+def test_auto_detect_asgs_2021_geo_dim():
+    # ASGS_2021 column auto-detected as geography without passing geo_dim.
+    df = pl.DataFrame(
+        {
+            "ASGS_2021: Region": ["101021007: Gungahlin"],
+            "OBS_VALUE": ["55"],
+        }
+    )
+    out = normalise(df, measure="value")
+    assert out["sa2_code"].to_list() == ["101021007"]
+    assert out["sa2_name"].to_list() == ["Gungahlin"]

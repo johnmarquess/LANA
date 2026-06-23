@@ -86,10 +86,16 @@ def test_get_raises_immediately_on_non_retryable(monkeypatch):
 
 
 def test_get_raises_runtimeerror_after_exhausting_retries(monkeypatch):
-    fake = _patch(monkeypatch, [503, 503, 503, 503])  # api_max_retries default = 4
+    max_retries = Settings().api_max_retries
+    fake = _patch(monkeypatch, [503] * max_retries)
+    sleep_calls = []
+    monkeypatch.setattr(abs_client.time, "sleep", lambda s: sleep_calls.append(s))
     with pytest.raises(RuntimeError):
         ABSClient(Settings())._get("http://x", "application/json")
-    assert fake.get_calls == 4
+    assert fake.get_calls == max_retries
+    # throttle sleep never fires (all retryable); only backoff sleeps count.
+    # Final attempt must NOT sleep before raising — so max_retries - 1 backoff sleeps.
+    assert len(sleep_calls) == max_retries - 1
 
 
 def test_get_data_handles_type_change_after_inference_window(monkeypatch):
