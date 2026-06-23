@@ -104,8 +104,9 @@ def seifa_phn_summary(
 ) -> pl.DataFrame:
     """PHN-level SEIFA: deciles can't be averaged, so summarise the SA2 distribution.
 
-    Population-weighted (URP) median national IRSD decile + share of population in
-    the two most-disadvantaged deciles.
+    `irsd_decile_median` is the **unweighted** median of the SA2 IRSD deciles within
+    the PHN. `pop_pct_in_bottom2_deciles` is the URP-weighted share of the PHN
+    population residing in the two most-disadvantaged deciles.
 
     If `phn` is given, only that PHN's members (via the bridge) are aggregated and a
     single row is returned. Without `phn`, all PHNs are returned (useful for the
@@ -119,6 +120,7 @@ def seifa_phn_summary(
         df.group_by("phn_name")
         .agg(
             pl.col("irsd_decile").min().alias("irsd_decile_min"),
+            # ponytail: unweighted median; switch to a population-weighted median if PHN disadvantage summaries need it
             pl.col("irsd_decile").median().alias("irsd_decile_median"),
             pl.col("irsd_decile").max().alias("irsd_decile_max"),
             pl.when(pl.col("urp").sum() > 0)
